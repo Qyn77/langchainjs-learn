@@ -63,7 +63,7 @@ import { z } from "zod";
 
 // ===== 1. 准备模型 =====
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: process.env.MODELSCOPE_API_KEY,
   temperature: 0,
   configuration: {

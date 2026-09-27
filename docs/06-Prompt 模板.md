@@ -79,7 +79,7 @@ import { HumanMessage } from "@langchain/core/messages";
 import { PromptTemplate } from "@langchain/core/prompts";
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: process.env.MODELSCOPE_API_KEY,
   configuration: {
     baseURL: "https://api-inference.modelscope.cn/v1",

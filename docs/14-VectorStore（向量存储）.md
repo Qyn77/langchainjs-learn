@@ -3,8 +3,8 @@
 > 📅 适用于 LangChain.js v1.x | 👶 零基础友好
 > 💡 **注意：** 需要 Node.js 20+
 
-> ⚠️ **重要说明：** LangChain v1.x 中 `MemoryVectorStore` 已被移除或移动到其他包。
-> 本章将介绍向量存储的概念，并提供一个**可运行的简单实现**作为替代方案。
+> 💡 **重要说明：** `MemoryVectorStore` 在 LangChain 1.x 中已迁移到 `@langchain/classic/vectorstores/memory`，仍然可用。
+> 本章先讲概念，再给出**真实向量检索**（MemoryVectorStore + Embeddings）和**无 Embedding 服务的简化模拟**两种可运行方案。
 
 ---
 
@@ -97,7 +97,8 @@
 ## 📦 安装依赖
 
 ```bash
-npm install @langchain/core @langchain/openai zod
+npm install @langchain/core @langchain/openai @langchain/classic zod
+# @langchain/classic 提供 MemoryVectorStore
 ```
 
 ---
@@ -106,7 +107,7 @@ npm install @langchain/core @langchain/openai zod
 
 | 向量存储 | 类型 | 特点 | 使用场景 |
 |---------|------|------|----------|
-| `MemoryVectorStore` | 内存 | 简单、快速、重启丢失 | ⚠️ LangChain v1.x 已移除 |
+| `MemoryVectorStore` | 内存 | 简单、快速、重启丢失 | ✅ 位于 `@langchain/classic` |
 | `Chroma` | 数据库 | 开源、易用 | 中小型项目 |
 | `Pinecone` | 云服务 | 高性能、托管 | 生产环境 |
 | `Weaviate` | 数据库 | 功能丰富 | 企业级应用 |
@@ -114,11 +115,74 @@ npm install @langchain/core @langchain/openai zod
 
 ---
 
-## 🔧 简单向量存储实现（可运行）
+## 🔧 方式 A：真实向量存储（MemoryVectorStore + Embeddings，推荐）
 
-> ⚠️ 由于 `MemoryVectorStore` 在 LangChain v1.x 中不可用，这里提供一个简单的实现作为替代。
+```javascript
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { Document } from "@langchain/core/documents";
+import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
 
-### 示例 1：基础用法
+// Embedding 服务（需支持 OpenAI 兼容 /embeddings 接口，说明见第 13 章）
+const embeddings = new OpenAIEmbeddings({
+  model: "text-embedding-3-small",
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// 创建文档
+const documents = [
+  new Document({
+    pageContent: "Python 是一种高级编程语言，由 Guido van Rossum 于 1989 年发明。",
+    metadata: { source: "编程语言", category: "技术" }
+  }),
+  new Document({
+    pageContent: "JavaScript 主要用于网页开发，可以在浏览器中运行。",
+    metadata: { source: "编程语言", category: "技术" }
+  }),
+  new Document({
+    pageContent: "Java 是一种面向对象的编程语言，广泛用于企业级应用。",
+    metadata: { source: "编程语言", category: "技术" }
+  }),
+  new Document({
+    pageContent: "C++ 是一种高性能语言，常用于游戏开发和系统编程。",
+    metadata: { source: "编程语言", category: "技术" }
+  })
+];
+
+// 入库：文档会被自动向量化
+const vectorStore = await MemoryVectorStore.fromDocuments(documents, embeddings);
+console.log("📚 正在构建知识库...");
+console.log("✅ 知识库构建完成！共", documents.length, "个文档\n");
+
+// 语义相似度检索（真实向量计算）
+const results = await vectorStore.similaritySearch("哪种语言适合做游戏？", 2);
+
+console.log("\n📚 搜索结果:");
+results.forEach((doc, i) => {
+  console.log(`  ${i + 1}. ${doc.pageContent}`);
+  console.log(`     元数据：${JSON.stringify(doc.metadata)}`);
+});
+```
+
+### 输出示例
+
+```
+📚 正在构建知识库...
+✅ 知识库构建完成！共 4 个文档
+
+📚 搜索结果:
+  1. C++ 是一种高性能语言，常用于游戏开发和系统编程。
+     元数据：{"source":"编程语言","category":"技术"}
+  2. Java 是一种面向对象的编程语言，广泛用于企业级应用。
+     元数据：{"source":"编程语言","category":"技术"}
+```
+
+> 💡 试试把问题换成"谁发明了 Python？"——查询词和原文用词不同，字符匹配找不到，但向量检索照样命中，这就是它的价值。
+
+---
+
+## 🔧 方式 B：无 Embedding 服务的简化模拟（了解原理）
+
+> 没有可用的 Embedding 服务时，可以用下面的"字符匹配"模拟检索，便于理解向量存储的接口形态；真实项目请用方式 A。
 
 ```javascript
 import { ChatOpenAI } from "@langchain/openai";
@@ -127,7 +191,7 @@ import { Document } from "@langchain/core/documents";
 
 // 创建模型
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: "你的 API Key",
   temperature: 0,
   configuration: {
@@ -203,7 +267,7 @@ results.forEach((doc, i) => {
      元数据：{"source":"编程语言","category":"技术"}
 ```
 
-### 示例 2：RAG 查询
+### 方式 B 的 RAG 查询
 
 ```javascript
 import { ChatOpenAI } from "@langchain/openai";
@@ -211,7 +275,7 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { Document } from "@langchain/core/documents";
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: "你的 API Key",
   temperature: 0,
   configuration: {
@@ -351,6 +415,8 @@ const vectorStore = await PineconeStore.fromTexts(
 
 ## 📊 向量存储操作详解
 
+> 💡 以下操作基于方式 A 的 `MemoryVectorStore`（导入：`import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";`）。
+
 ### 1. 创建方式
 
 ```javascript
@@ -408,17 +474,24 @@ await vectorStore.addDocuments([new Document({...})]);
 ## 🎓 实战项目：个人知识库
 
 ```javascript
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { Document } from "@langchain/core/documents";
+import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: "你的 API Key",
   temperature: 0,
   configuration: {
     baseURL: "https://api-inference.modelscope.cn/v1",
   },
+});
+
+// Embedding 模型（向量检索用，服务要求见第 13 章说明）
+const embeddings = new OpenAIEmbeddings({
+  model: "text-embedding-3-small",
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 // 个人知识库内容
@@ -438,29 +511,16 @@ const documents = personalKnowledge.map((content, i) =>
   })
 );
 
-// 简单相似度搜索
-function similaritySearch(query, docs, topK = 3) {
-  const queryWords = query.split('').filter(c => c.trim());
-  const scored = docs.map((doc) => {
-    const content = doc.pageContent.toLowerCase();
-    let score = 0;
-    queryWords.forEach(word => {
-      if (content.includes(word)) score += 1;
-    });
-    return { doc, score };
-  });
-  return scored
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topK)
-    .map(item => item.doc);
-}
+// 构建向量存储：文档自动向量化入库
+const vectorStore = await MemoryVectorStore.fromDocuments(documents, embeddings);
+console.log("✅ 知识库已构建（", documents.length, "个文档）\n");
 
 // RAG 查询
 async function queryKnowledgeBase(question) {
   console.log("📝 问题:", question);
 
-  // 检索相关文档
-  const relevantDocs = similaritySearch(question, documents, 3);
+  // 语义检索相关文档
+  const relevantDocs = await vectorStore.similaritySearch(question, 3);
 
   console.log("\n📚 相关文档:");
   relevantDocs.forEach((doc, i) => {
@@ -505,7 +565,7 @@ await queryKnowledgeBase("项目 B 的负责人是谁？");
 ```javascript
 // 英文文本
 const embeddings = new OpenAIEmbeddings({
-  modelName: "text-embedding-3-small",  // 性价比高
+  model: "text-embedding-3-small",  // 性价比高
 });
 
 // 中文文本（需要支持中文的模型）
@@ -549,8 +609,8 @@ async function cachedSearch(query) {
 ## 📝 本章小结
 
 - 向量存储 = 存储向量 + 相似度搜索
-- LangChain v1.x 中 `MemoryVectorStore` 已移除
-- 可以使用简单相似度搜索作为替代方案
+- `MemoryVectorStore` 位于 `@langchain/classic/vectorstores/memory`，仍然可用
+- 无 Embedding 服务时可用字符匹配模拟理解原理
 - Chroma、Pinecone 适合生产环境
 - Embedding 将文本转为向量
 - 相似度搜索按语义而非关键词

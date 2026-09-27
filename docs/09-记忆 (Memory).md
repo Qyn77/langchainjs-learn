@@ -48,7 +48,7 @@ const response2 = await model.invoke(messageHistory);
 
 ## 📦 LangChain v1.x 中的记忆管理
 
-**重要说明：** LangChain v1.x 中 `ChatMessageHistory` 已被移除，推荐使用**手动管理消息数组**的方式。
+**重要说明：** LangChain 1.x 中 `ChatMessageHistory` 已从主包移除（迁移到 `@langchain/classic/memory/chat_memory`，旧项目可安装 `@langchain/classic` 继续使用）。对新项目：裸模型调用时推荐**手动管理消息数组**（本章讲的方式）；如果用的是第 12 章的 `createAgent`，直接传 `checkpointer` 即可获得对话记忆（见 LangGraph 篇第 21 章）。
 
 ### 基本用法
 
@@ -80,7 +80,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: process.env.MODELSCOPE_API_KEY,
   temperature: 0.7,
   configuration: {
@@ -337,7 +337,7 @@ function loadHistory(filename = 'history.json') {
 
 ## 📝 本章小结
 
-- LangChain v1.x 推荐**手动管理消息数组**
+- LangChain 1.x 中裸模型调用推荐**手动管理消息数组**；`createAgent` 可直接传 checkpointer 获得记忆
 - 使用 `push()` 添加消息，`invoke()` 发送对话
 - 可以限制历史长度节省 token
 - 可以封装为 ChatBot 类

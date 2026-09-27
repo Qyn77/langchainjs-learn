@@ -245,7 +245,7 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { z } from "zod";
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: "你的 API Key",
   temperature: 0,
   configuration: {

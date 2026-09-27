@@ -30,20 +30,26 @@
 
 ## 📦 创建工具
 
-### 方式 1：使用 tool 函数
+### 方式 1：使用 tool 函数（推荐）
 
 ```javascript
 import { tool } from "@langchain/core/tools";
+import { z } from "zod";
 
-const searchTool = tool(async (query) => {
+const searchTool = tool(async ({ query }) => {
   // 执行搜索
   const results = await search(query);
   return results;
 }, {
   name: "search",
-  description: "搜索网络信息"
+  description: "搜索网络信息",
+  schema: z.object({
+    query: z.string().describe("搜索关键词")
+  })
 });
 ```
+
+> 💡 **关键点：** 建议始终配置 `schema` 并用**解构**接收参数（`async ({ query })`）——不配 schema 时框架会把参数整体打包传入，直接 `(query)` 接收会拿到 `[object Object]`（第 12 章详细解释过这个坑）。
 
 ### 方式 2：使用 Tool 类
 
@@ -69,9 +75,10 @@ class CalculatorTool extends Tool {
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { tool } from "@langchain/core/tools";
+import { z } from "zod";
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: process.env.MODELSCOPE_API_KEY,
   configuration: {
     baseURL: "https://api-inference.modelscope.cn/v1",
@@ -79,7 +86,7 @@ const model = new ChatOpenAI({
 });
 
 // === 工具 1：计算器 ===
-const calculatorTool = tool(async (expression) => {
+const calculatorTool = tool(async ({ expression }) => {
   console.log(`[工具] 计算器：计算 ${expression}`);
   try {
     return String(eval(expression));
@@ -88,7 +95,10 @@ const calculatorTool = tool(async (expression) => {
   }
 }, {
   name: "calculator",
-  description: "计算数学表达式，例如：2 + 3 * 4"
+  description: "计算数学表达式，例如：2 + 3 * 4",
+  schema: z.object({
+    expression: z.string().describe("要计算的数学表达式")
+  })
 });
 
 // === 工具 2：获取当前时间 ===
@@ -98,11 +108,12 @@ const timeTool = tool(async () => {
   return now.toLocaleString("zh-CN");
 }, {
   name: "get_current_time",
-  description: "获取当前日期和时间"
+  description: "获取当前日期和时间",
+  schema: z.object({})
 });
 
 // === 工具 3：天气查询（模拟）===
-const weatherTool = tool(async (city) => {
+const weatherTool = tool(async ({ city }) => {
   console.log(`[工具] 查询天气：${city}`);
   const weatherData = {
     "北京": "晴，25°C",
@@ -113,7 +124,10 @@ const weatherTool = tool(async (city) => {
   return weatherData[city] || "未知城市";
 }, {
   name: "get_weather",
-  description: "查询城市天气，参数：城市名（北京/上海/广州/深圳）"
+  description: "查询城市天气，参数：城市名（北京/上海/广州/深圳）",
+  schema: z.object({
+    city: z.string().describe("城市名称")
+  })
 });
 
 // 注册工具列表
@@ -176,8 +190,7 @@ const myTool = tool(async (input) => {
 ```javascript
 import { z } from "zod";
 
-const divideTool = tool(async (input) => {
-  const { a, b } = JSON.parse(input);
+const divideTool = tool(async ({ a, b }) => {
   return String(a / b);
 }, {
   name: "divide",
@@ -192,6 +205,8 @@ const divideTool = tool(async (input) => {
 ---
 
 ## 🎯 简化版：直接调用工具
+
+> 💡 下面这种"Prompt 约定 + 正则解析"的方式**仅适合理解原理**；实际项目请直接用第 12 章的 `createAgent`，它会自动完成"判断是否需要工具 → 调用 → 结果回填"的全过程。
 
 如果不想要复杂的 Agent 逻辑，可以直接判断并调用：
 
@@ -343,7 +358,7 @@ const searchTool = tool(async (query) => {
 
 - 工具 (Tools) 让 AI 能够调用函数/API
 - 使用 `tool()` 函数创建工具
-- 工具需要 name 和 description
+- 工具需要 name 和 description，**参数建议配 Zod schema 并用解构接收**（否则会收到 `[object Object]`，见第 12 章）
 - 注意安全问题（eval、权限、输入验证）
 
 ---

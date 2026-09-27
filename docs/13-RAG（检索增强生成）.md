@@ -86,7 +86,8 @@
 ## 📦 安装依赖
 
 ```bash
-npm install @langchain/core @langchain/openai @langchain/community zod
+npm install @langchain/core @langchain/openai @langchain/classic zod
+# @langchain/classic 提供 MemoryVectorStore（真实向量存储，见下文方式 B）
 ```
 
 ---
@@ -146,7 +147,7 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: "你的 API Key",
   temperature: 0,
   configuration: {
@@ -223,16 +224,90 @@ await ragQuery("怎么联系你们？");
 
 ---
 
-## 🎯 使用向量存储的 RAG
+## 🎯 方式 B：真实向量检索（MemoryVectorStore + Embeddings）
 
-> ⚠️ **注意：** LangChain v1.x 中 `MemoryVectorStore` 已被移除或移动。
-> 以下示例展示概念，实际项目中可以使用简单 RAG 或等待官方更新。
-
-### 概念示例（了解原理）
+> 💡 **包位置：** `MemoryVectorStore` 在 LangChain 1.x 中位于 `@langchain/classic/vectorstores/memory`（从旧包迁移而来，仍然可用）。
+>
+> ⚠️ **Embedding 服务：** 真实向量检索需要 Embedding 接口。ModelScope 的 api-inference 主要面向对话/生成模型，本教程写作时未确认其提供 OpenAI 兼容的 `/embeddings` 端点，因此示例使用 OpenAI 的 Embedding 服务；任何 OpenAI 兼容的 Embedding 平台（阿里云百炼兼容模式、智谱等）只需替换 `apiKey` 和 `baseURL`。
 
 ```javascript
-// 这是概念示例，展示向量存储的工作原理
-// 实际项目中可以使用简单 RAG（上面的示例）或等待官方更新
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
+
+const model = new ChatOpenAI({
+  model: "MiniMax/MiniMax-M2.5",
+  apiKey: process.env.MODELSCOPE_API_KEY,
+  temperature: 0,
+  configuration: {
+    baseURL: "https://api-inference.modelscope.cn/v1",
+  },
+});
+
+// 1. Embedding 模型：把文本转成向量
+const embeddings = new OpenAIEmbeddings({
+  model: "text-embedding-3-small",
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// 2. 构建向量存储：每段文本都会被自动向量化后存入内存
+const vectorStore = await MemoryVectorStore.fromTexts(
+  [
+    "Python 是一种高级编程语言，由 Guido van Rossum 于 1989 年发明。",
+    "JavaScript 主要用于网页开发，也可以用 Node.js 做后端。",
+    "C++ 是一种高性能语言，常用于游戏开发和系统编程。",
+    "Go 语言由 Google 开发，适合构建高性能的后端服务。",
+  ],
+  [{ source: "python" }, { source: "javascript" }, { source: "cpp" }, { source: "go" }],
+  embeddings
+);
+
+// 3. 语义检索：就算说法不同，意思相近也能找到！
+const results = await vectorStore.similaritySearch("这门语言的创始人是谁？", 2);
+results.forEach((doc, i) => {
+  console.log(`${i + 1}. [${doc.metadata.source}] ${doc.pageContent}`);
+});
+// 1. [python] Python 是一种高级编程语言，由 Guido van Rossum 于 1989 年发明。
+//    ↑ 注意："创始人"和"发明"用词不同，字符匹配找不到，向量检索可以！
+
+// 4. 完整 RAG：检索 → 组装上下文 → 生成
+async function ragQuery(question) {
+  console.log("\n📝 用户问题:", question);
+
+  const relevantDocs = await vectorStore.similaritySearch(question, 2);
+  const context = relevantDocs.map((d) => d.pageContent).join("\n");
+
+  const response = await model.invoke([
+    new SystemMessage(
+      `你是一个编程助手。请根据以下参考资料回答问题，资料中没有的信息不要编造。\n\n参考资料：\n${context}`
+    ),
+    new HumanMessage(question),
+  ]);
+
+  console.log("🤖 AI 回答:", response.content);
+  return response.content;
+}
+
+await ragQuery("Python 是谁发明的？");
+await ragQuery("哪种语言适合写游戏？");
+```
+
+### 字符匹配 vs 向量检索
+
+| | 字符匹配（方式 A） | 向量检索（方式 B） |
+|---|---|---|
+| 原理 | 统计查询字符在文档中出现的次数 | 文本转向量，计算余弦相似度 |
+| 同义换说法 | ❌ 检索不到 | ✅ 语义相近即可命中 |
+| 额外依赖 | 无 | 需要 Embedding 服务 |
+| 定位 | 快速原型、理解流程 | 生产 RAG 的标准做法 |
+
+---
+
+## 📎 附：字符匹配版 RAG（无 Embedding 服务时的替代）
+
+> 下面用字符匹配模拟"检索→组装→生成"的流程，便于在不引入 Embedding 服务的情况下理解 RAG 的骨架；真实项目请使用上面的向量检索。
+
+```javascript
 
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
@@ -274,7 +349,7 @@ function simpleSearch(query, docs, topK = 2) {
 }
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: "你的 API Key",
   temperature: 0,
   configuration: {
@@ -509,7 +584,8 @@ const prompt = new SystemMessage("回答问题：");  // 没有说明使用参�
 - RAG = 检索 + 生成，让 AI 先查资料再回答
 - 核心组件：文档加载、文本分割、向量化、检索、生成
 - 可以解决知识截止、私有数据、幻觉问题
-- 向量存储支持相似度搜索
+- 真实向量检索：`MemoryVectorStore`（`@langchain/classic`）+ `OpenAIEmbeddings`，按语义而非关键词
+- 字符匹配只是无 Embedding 服务时的简化模拟
 - 提示词设计很重要
 
 ---

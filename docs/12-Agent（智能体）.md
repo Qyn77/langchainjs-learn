@@ -71,22 +71,24 @@
 
 | 版本 | 导入方式 | 状态 |
 |------|---------|------|
-| LangChain 0.x | `@langchain/langgraph/prebuilt` | ❌ 已弃用 |
-| LangChain 1.0+ | `langchain` | ✅ **推荐** |
+| LangChain 0.x | `createReactAgent`（`@langchain/langgraph/prebuilt`） | ⚠️ 函数仍可用，参数类型已标记 `@deprecated` |
+| LangChain 1.x | `createAgent`（`langchain` 主包） | ✅ **当前推荐** |
 
 ### ⚠️ API 迁移说明
 
-**旧方式（已弃用）：**
+**旧方式（已过时，新项目不要再用的）：**
 ```javascript
-import { createReactAgent } from "@langchain/langgraph/prebuilt";  // ❌ 已弃用
+import { createReactAgent } from "@langchain/langgraph/prebuilt";  // ⚠️ 参数类型已标 deprecated
+const agent = createReactAgent({ llm: model, tools });  // 注意参数名是 llm
 ```
 
-**新方式（LangChain 1.0+ 推荐）：**
+**新方式（LangChain 1.x 推荐）：**
 ```javascript
 import { createAgent } from "langchain";  // ✅ 最新 API
+const agent = createAgent({ model, tools });  // 注意参数名是 model
 ```
 
-> 💡 **说明：** LangChain 1.0+ 将所有 Agent API 统一为 `createAgent`，它基于 ReAct 模式，支持工具调用、中间件、结构化输出等高级功能。
+> 💡 **说明：** LangChain 1.x 将 Agent API 统一为 `createAgent`（基于 LangGraph 实现，支持工具调用、结构化输出、检查点记忆等）。旧函数 `createReactAgent` 短期内仍能运行，但新项目请一律使用 `createAgent`。两者的关键差异：参数名 `llm` → `model`，`messageModifier` → `prompt`。
 
 ---
 
@@ -98,8 +100,8 @@ npm install langchain @langchain/core @langchain/openai zod
 ```
 
 > 💡 **注意：** 
-> - `createAgent` 是 LangChain 1.0+ 的推荐 API
-> - 旧版本 `createReactAgent` 已从 `@langchain/langgraph/prebuilt` 弃用
+> - `createAgent` 是 LangChain 1.x 的推荐 API
+> - 旧版 `createReactAgent`（`@langchain/langgraph/prebuilt`）仍可运行，但参数类型已标记 `@deprecated`，新项目请用 `createAgent`
 
 ---
 
@@ -116,7 +118,7 @@ import { z } from "zod";
 
 // 1. 创建模型
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: "你的 API Key",
   temperature: 0,
   configuration: {
@@ -196,7 +198,7 @@ import { createAgent } from "langchain";  // ✅ LangChain 1.0+ 推荐 API
 import { z } from "zod";
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: "你的 API Key",
   temperature: 0,
   configuration: {
@@ -218,8 +220,8 @@ const calculatorTool = tool(async ({ expression }) => {
 const tools = [calculatorTool];
 
 // 创建 Agent
-const agent = createReactAgent({
-  llm: model,
+const agent = createAgent({
+  model: model,
   tools: tools,
 });
 
@@ -270,7 +272,7 @@ import { createAgent } from "langchain";  // ✅ LangChain 1.0+ 推荐 API
 import { z } from "zod";
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: "你的 API Key",
   temperature: 0,
   configuration: {
@@ -319,8 +321,8 @@ const clothingAdviceTool = tool(async ({ weather }) => {
 const tools = [weatherTool, clothingAdviceTool];
 
 // 创建 Agent
-const agent = createReactAgent({
-  llm: model,
+const agent = createAgent({
+  model: model,
   tools: tools,
 });
 
@@ -366,15 +368,28 @@ console.log("Agent:", result.messages[result.messages.length - 1].content);
 ## ⚙️ Agent 配置参数
 
 ```javascript
-const agent = createReactAgent({
-  llm: model,           // 大语言模型（必需）
-  tools: tools,         // 工具列表（必需）
-  
-  // 可选配置
-  // messageModifier: SystemMessage("你是一个有用的助手"),  // 系统提示
-  // maxIterations: 10,  // 最大迭代次数，防止无限循环
+import { createAgent } from "langchain";
+
+const agent = createAgent({
+  model: model,     // 模型实例（必需）
+  tools: tools,     // 工具列表（必需）
+
+  // 常用可选配置
+  prompt: "你是一个乐于助人的助手",   // 系统提示（字符串 / SystemMessage / 函数）
+  // responseFormat: z.object({...}), // 结构化输出（结果在 result.structuredResponse）
+  // checkpointer: new MemorySaver(), // 对话记忆（见 LangGraph 篇第 21 章）
 });
 ```
+
+| 参数 | 说明 |
+|------|------|
+| `model` | 模型实例（必需，框架自动绑定工具） |
+| `tools` | 工具数组（必需） |
+| `prompt` | 系统提示：字符串 / `SystemMessage` / `(state, config) => messages` 函数 |
+| `responseFormat` | 结构化输出 Schema（Zod / JSON Schema），结果在 `result.structuredResponse`（见第 07 章） |
+| `checkpointer` | 检查点器，开启多轮对话记忆（LangGraph 篇第 21 章） |
+
+> 💡 旧 API 的 `messageModifier` 已更名为 `prompt`；运行步数上限不在构造时配置，而是调用时传 `{ recursionLimit: N }`（默认 25）。
 
 ---
 
@@ -445,17 +460,16 @@ const robustTool = tool(async ({ input }) => {
 });
 ```
 
-### 5. 最大迭代次数
+### 5. 运行步数上限
 
-Agent 可能会陷入循环，设置最大迭代次数：
+Agent 可能会陷入循环，LangGraph 通过"递归上限"控制（默认 25 步）：
 
 ```javascript
-const agent = createReactAgent({
-  llm: model,
-  tools: tools,
-  // 某些版本支持配置最大迭代次数
-  // maxIterations: 10,
-});
+const result = await agent.invoke(
+  { messages: [input] },
+  { recursionLimit: 50 }  // 复杂任务可调大上限
+);
+// 超过上限会抛出 GraphRecursionError
 ```
 
 ---
@@ -470,7 +484,7 @@ import { createAgent } from "langchain";  // ✅ LangChain 1.0+ 推荐 API
 import { z } from "zod";
 
 const model = new ChatOpenAI({
-  modelName: "MiniMax/MiniMax-M2.5",
+  model: "MiniMax/MiniMax-M2.5",
   apiKey: "你的 API Key",
   temperature: 0.7,
   configuration: {
@@ -546,8 +560,8 @@ const tools = [
 ];
 
 // 创建 Agent
-const agent = createReactAgent({
-  llm: model,
+const agent = createAgent({
+  model: model,
   tools: tools,
 });
 
@@ -570,12 +584,12 @@ console.log(result.messages[result.messages.length - 1].content);
 ## 📝 本章小结
 
 - Agent = 大模型 + 工具 + 规划能力
-- `createAgent` 是 LangChain 1.0+ 推荐的 Agent API（基于 ReAct 模式）
-- 旧版 `createReactAgent` 已弃用，建议迁移到 `createAgent`
+- `createAgent`（`langchain` 主包）是 LangChain 1.x 的标准 Agent API，参数名为 `model` + `tools`
+- 旧版 `createReactAgent` 已过时（参数类型标记 deprecated），迁移时注意 `llm` → `model`、`messageModifier` → `prompt`
 - 工具函数参数需要解构 `async ({ expression })`
 - 工具描述要清晰准确
 - 可以处理多步骤复杂任务
-- 注意错误处理和循环限制
+- 运行步数上限用 `{ recursionLimit: N }` 控制；需要记忆时传 `checkpointer`（LangGraph 篇第 21 章）
 
 ---
 
