@@ -53,7 +53,9 @@ description: 适用于 2026 年 LangChain.js v1.x 版本的零基础入门教程
 | [23](./23-子图.md) | 子图（Subgraphs） | 图里套图：复用、分治 |
 | [24](./24-多 Agent 系统.md) | 多 Agent 系统 | Supervisor 模式与 createSupervisor |
 | [25](./25-流式输出.md) | 流式输出 | streamMode、messages 打字机、writer 进度 |
-| [26](./26-实战项目.md) | 实战项目 | 智能旅行管家：综合运用全部知识 |
+| [26](./26-长期记忆与跨线程 Store.md) | 长期记忆与跨线程 Store | InMemoryStore、用户画像、跨会话记忆 |
+| [27](./27-Functional API.md) | Functional API | entrypoint、task、不画图的工作流 |
+| [28](./28-实战项目.md) | 实战项目 | 智能旅行管家：综合运用全部知识 |
 
 ---
 

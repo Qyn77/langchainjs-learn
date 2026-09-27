@@ -281,6 +281,68 @@ Supervisor 模式:        网络模式:
 
 ---
 
+## 🤝 进阶：Handoff——Agent 直接接力
+
+Supervisor 是"中心调度"，还有一种**去中心化**玩法：**Handoff（交接棒）**——每个 Agent 干完自己的活，直接用 `Command({ goto })`（第 18 章）把控制权交给下一个 Agent，不经过主管。
+
+```javascript
+import { HumanMessage, ToolMessage } from "@langchain/core/messages";
+import { Command, MessagesAnnotation, StateGraph, START, END } from "@langchain/langgraph";
+
+// 前台分诊 Agent：判断问题归属，直接交接
+async function triageAgent(state) {
+  const lastMsg = String(state.messages[state.messages.length - 1].content);
+
+  if (lastMsg.includes("发票") || lastMsg.includes("订单")) {
+    // ★ 不返回状态更新，而是"交接"给账单专家
+    return new Command({
+      update: { messages: [{ role: "ai", content: "这个问题转给账单专员处理。" }] },
+      goto: "billingAgent",
+    });
+  }
+  return new Command({
+    update: { messages: [{ role: "ai", content: "这个问题转给技术专员处理。" }] },
+    goto: "techAgent",
+  });
+}
+
+async function billingAgent(state) {
+  return { messages: [{ role: "ai", content: "您好，退款将在 3 个工作日内到账。" }] };
+}
+
+async function techAgent(state) {
+  return { messages: [{ role: "ai", content: "请先重启应用再清缓存试试。" }] };
+}
+
+const graph = new StateGraph(MessagesAnnotation)
+  .addNode("triageAgent", triageAgent)
+  .addNode("billingAgent", billingAgent)
+  .addNode("techAgent", techAgent)
+  .addEdge(START, "triageAgent")
+  // 注意：两个专家节点谁也不指向谁——接力关系是运行时由 Command 决定的
+  .addEdge("billingAgent", END)
+  .addEdge("techAgent", END)
+  .compile();
+
+const result = await graph.invoke({
+  messages: [new HumanMessage("我的发票怎么还没开出来？")],
+});
+console.log(result.messages[result.messages.length - 1].content);
+// 您好，退款将在 3 个工作日内到账。  ← 控制权一路交接到了 billingAgent
+```
+
+两种架构怎么选（回顾第 19 章的对比）：
+
+| | Supervisor（中心化） | Handoff（去中心化） |
+|---|---|---|
+| 控制流 | 主管统一调度，清晰可控 | Agent 自行决定交给谁，灵活 |
+| 适合 | 分工明确的团队任务 | 流程像接力赛、前一个知道下一个该谁 |
+| 调试难度 | 低 | 偏高（交接链路藏在运行时） |
+
+> 💡 **提示：** 真实的 Handoff Agent 通常会让每个专家 LLM 自己输出"要交给谁"（而不是写死的 if），再映射成 `Command({ goto })`。入门先用硬编码规则理解机制即可。
+
+---
+
 ## ⚠️ 注意事项
 
 ### 1. 专家 Agent 必须有 name

@@ -60,7 +60,9 @@ export default defineConfig({
             { text: '23 - 子图', link: '/23-子图' },
             { text: '24 - 多 Agent 系统', link: '/24-多 Agent 系统' },
             { text: '25 - 流式输出', link: '/25-流式输出' },
-            { text: '26 - 实战项目', link: '/26-实战项目' },
+            { text: '26 - 长期记忆与跨线程 Store', link: '/26-长期记忆与跨线程 Store' },
+            { text: '27 - Functional API', link: '/27-Functional API' },
+            { text: '28 - 实战项目', link: '/28-实战项目' },
           ]
         }
       ]
