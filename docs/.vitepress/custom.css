@@ -1,0 +1,94 @@
+/* 自定义样式：侧边栏布局调优（通过 theme/index.js 加载） */
+
+/* 加宽侧边栏，容纳长章节名；收窄顶部导航条高度（默认 64px，
+   标题条和侧边栏顶部偏移都引用该变量，一处修改全局生效） */
+:root {
+  --vp-sidebar-width: 288px;
+  --vp-nav-height: 48px;
+}
+
+/*
+ * 收紧底部与左右边距。
+ * 注意：padding-top 一律不改——桌面端(≥960px) VitePress 会把顶部
+ * 内边距设为导航栏高度以避免标题重叠，抽屉端(＜960px)默认 32px
+ * 同样是给标题留位的，压小会导致文字叠印。
+ * 双写类名 .VPSidebar.VPSidebar 是为了在特异性上追平默认的
+ * `.VPSidebar[data-v-xxx]`（0,2,0），并靠加载顺序取胜。
+ */
+.VPSidebar.VPSidebar {
+  padding-bottom: 48px;
+}
+
+@media (max-width: 1439px) {
+  .VPSidebar.VPSidebar {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+}
+
+/* 收紧分组间距（默认 24px） */
+.VPSidebar .VPSidebarItem.level-0 {
+  padding-bottom: 12px !important;
+}
+
+/* 收紧条目行距（默认 line-height 24px + padding 4px 0 = 行高 32px） */
+.VPSidebarItem .text {
+  line-height: 20px !important;
+  padding: 2px 0 !important;
+}
+
+/* 分组标题：小一号、次级色，避免与条目抢视觉焦点 */
+.VPSidebar .VPSidebarItem.level-0 > .item .text {
+  font-size: 13px;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px;
+}
+
+/* 条目相对分组标题缩进，形成层级感 */
+.VPSidebarItem.level-1 > .item {
+  padding-left: 14px;
+}
+
+/*
+ * 宽屏(≥1440px)取消 VitePress 的"居中对齐"规则——它会把侧边栏向右推
+ * max(32px, (视口-最大宽度)/2)（宽屏下可达 60-80px），右侧再留出对称
+ * 空隙，造成两侧大片留白。这里强制侧边栏始终贴左、占满自身宽度。
+ */
+@media (min-width: 1440px) {
+  .VPSidebar.VPSidebar {
+    padding-left: 20px !important;
+    width: var(--vp-sidebar-width) !important;
+  }
+}
+
+/*
+ * 站点标题与侧边栏内容左对齐。VitePress 给标题的缩进分三档：
+ * <960px 由 .wrapper 提供 24/32px；≥960px 标题自带 padding 0 32px；
+ * ≥1440px 改为居中计算值——都和侧边栏内容的 20px 对不上，逐档拉齐。
+ */
+@media (max-width: 959px) {
+  .VPNavBar.has-sidebar .wrapper {
+    padding-left: 20px !important;
+  }
+}
+
+/*
+ * 站点标题与侧边栏内容左对齐。标题是两层嵌套的 .title：
+ * 外层 div.title（VPNavBar，绝对定位、决定分隔线范围）和
+ * 内层 a.title（VPNavBarTitle，承载文字与下边框）。
+ * 外层：宽度=侧边栏 288、无内边距 → 分隔线精确 0→288 不外溢；
+ * 内层：文字缩进 20px → 与分组标题/条目对齐。
+ */
+@media (min-width: 960px) {
+  .VPNavBar.has-sidebar div.title {
+    left: 0 !important;
+    width: var(--vp-sidebar-width) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .VPNavBar.has-sidebar a.title {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}

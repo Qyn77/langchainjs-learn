@@ -1,24 +1,26 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: "LangChain.js 入门教程",
-  description: "适用于 2026 年 LangChain.js v1.x 版本的零基础入门教程",
+  title: "LangChain & LangGraph",
+  description: "适用于 2026 年 LangChain.js / LangGraph.js v1.x 的零基础入门教程",
 
   themeConfig: {
-    // 顶部导航
+    // 顶部导航 - 两大框架对称呈现
     nav: [
       { text: '首页', link: '/' },
-      { text: '基础篇', link: '/01-基础概念' },
-      { text: '进阶篇', link: '/06-Prompt 模板' },
-      { text: '高级篇', link: '/12-Agent（智能体）' },
-      { text: 'LangGraph 篇', link: '/15-LangGraph 简介' },
+      { text: 'LangChain 基础', link: '/01-基础概念' },
+      { text: 'LangChain 进阶', link: '/06-Prompt 模板' },
+      { text: 'LangChain 高级', link: '/12-Agent（智能体）' },
+      { text: 'LangGraph 基础', link: '/15-LangGraph 简介' },
+      { text: 'LangGraph 进阶', link: '/21-记忆与持久化' },
     ],
 
-    // 侧边栏 - 按章节分组
+    // 侧边栏 - 按框架 + 阶段分组
     sidebar: {
       '/': [
         {
-          text: '基础篇',
+          text: 'LangChain · 基础篇',
+          collapsed: true,
           items: [
             { text: '01 - 基础概念', link: '/01-基础概念' },
             { text: '02 - 环境搭建', link: '/02-环境搭建' },
@@ -28,7 +30,8 @@ export default defineConfig({
           ]
         },
         {
-          text: '进阶篇',
+          text: 'LangChain · 进阶篇',
+          collapsed: true,
           items: [
             { text: '06 - Prompt 模板', link: '/06-Prompt 模板' },
             { text: '07 - 输出解析器', link: '/07-输出解析器' },
@@ -39,7 +42,8 @@ export default defineConfig({
           ]
         },
         {
-          text: '高级篇',
+          text: 'LangChain · 高级篇',
+          collapsed: true,
           items: [
             { text: '12 - Agent（智能体）', link: '/12-Agent（智能体）' },
             { text: '13 - RAG（检索增强生成）', link: '/13-RAG（检索增强生成）' },
@@ -47,7 +51,8 @@ export default defineConfig({
           ]
         },
         {
-          text: 'LangGraph 篇',
+          text: 'LangGraph · 基础篇',
+          collapsed: true,
           items: [
             { text: '15 - LangGraph 简介', link: '/15-LangGraph 简介' },
             { text: '16 - 环境搭建与第一个图', link: '/16-环境搭建与第一个图' },
@@ -55,6 +60,12 @@ export default defineConfig({
             { text: '18 - 节点与边', link: '/18-节点与边' },
             { text: '19 - 条件边与路由', link: '/19-条件边与路由' },
             { text: '20 - 构建 ReAct Agent', link: '/20-构建 ReAct Agent' },
+          ]
+        },
+        {
+          text: 'LangGraph · 进阶篇',
+          collapsed: true,
+          items: [
             { text: '21 - 记忆与持久化', link: '/21-记忆与持久化' },
             { text: '22 - 人机协同', link: '/22-人机协同' },
             { text: '23 - 子图', link: '/23-子图' },
@@ -75,7 +86,7 @@ export default defineConfig({
 
     // 页脚
     footer: {
-      message: '基于 LangChain.js v1.x 版本',
+      message: '基于 LangChain.js v1.x 与 LangGraph.js v1.x',
       copyright: 'MIT License'
     },
 
