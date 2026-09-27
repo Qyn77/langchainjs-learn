@@ -18,25 +18,27 @@ export function preferredLang() {
   return 'zh'
 }
 
-/** 已经在 /zh 或 /en 下则不跳转。其余路径（含 /）补上语言前缀。 */
+/** 已经在 /zh 或 /en 下则不跳转。其余路径（含 /）补上语言前缀，并去掉 .html。 */
 export function redirectPath(pathname) {
-  if (
-    pathname === '/zh' ||
-    pathname.indexOf('/zh/') === 0 ||
-    pathname === '/en' ||
-    pathname.indexOf('/en/') === 0
-  ) {
-    return null
-  }
   if (/\.(css|js|mjs|map|json|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|txt|xml)$/i.test(pathname)) {
     return null
   }
 
-  var lang = preferredLang()
-  if (pathname === '/' || pathname === '/index.html') return '/' + lang + '/'
-
   var path = pathname
-  if (path.slice(-11) === '/index.html') path = path.slice(0, -10)
+  if (path.slice(-5) === '.html') path = path.slice(0, -5)
+  if (path.slice(-6) === '/index') path = path.slice(0, -6) || '/'
+  if (path === '/index') path = '/'
+  if (path === '/zh' || path === '/en') path = path + '/'
+
+  var localized =
+    path === '/zh/' ||
+    path.indexOf('/zh/') === 0 ||
+    path === '/en/' ||
+    path.indexOf('/en/') === 0
+  if (localized) return path === pathname ? null : path
+
+  var lang = preferredLang()
+  if (path === '/') return '/' + lang + '/'
   return '/' + lang + (path.charAt(0) === '/' ? path : '/' + path)
 }
 

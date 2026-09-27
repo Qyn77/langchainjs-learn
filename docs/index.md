@@ -1,5 +1,6 @@
 ---
 title: LangChain & LangGraph
+titleTemplate: false
 sidebar: false
 aside: false
 ---

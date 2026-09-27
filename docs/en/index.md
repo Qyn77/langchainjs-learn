@@ -1,6 +1,7 @@
 ---
 title: LangChain & LangGraph Getting Started Tutorial
-description: A from-scratch getting-started tutorial for LangChain.js / LangGraph.js v1.x in 2026
+titleTemplate: false
+description: A from-scratch tutorial for LangChain.js and LangGraph.js v1.x, from model calls, chains, and agents to stateful graphs.
 ---
 
 # LangChain & LangGraph Getting Started Tutorial

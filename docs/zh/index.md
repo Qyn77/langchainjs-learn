@@ -1,6 +1,7 @@
 ---
 title: LangChain & LangGraph 入门教程
-description: 适用于 2026 年 LangChain.js / LangGraph.js v1.x 的零基础入门教程
+titleTemplate: false
+description: 适用于 2026 年 LangChain.js / LangGraph.js v1.x 的零基础入门教程，从模型调用、链、Agent 到 LangGraph 状态图。
 ---
 
 # LangChain & LangGraph 入门教程

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import { redirectBootScript } from './locale.mjs'
+import { siteUrl, sitemapConfig, transformHead, transformPageData, writeRobots } from './seo.mjs'
 
 /** 中英文用同一套文件名，切换语言时才能落到同一章。 */
 const chapters = {
@@ -225,10 +226,17 @@ const zhTheme = {
 
 export default defineConfig({
   title: 'LangChain & LangGraph',
+  titleTemplate: ':title | LangChain & LangGraph',
   description: '适用于 2026 年 LangChain.js / LangGraph.js v1.x 的零基础入门教程',
+  cleanUrls: true,
 
   // 在页面脚本运行前跳转，避免先画出错误语言。
   head: [['script', {}, redirectBootScript()]],
+
+  transformPageData,
+  transformHead,
+  buildEnd: writeRobots,
+  ...(siteUrl ? { sitemap: sitemapConfig() } : {}),
 
   locales: {
     root: {
