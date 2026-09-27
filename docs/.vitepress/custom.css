@@ -1,84 +1,125 @@
-/* 自定义样式：侧边栏布局调优（通过 theme/index.js 加载） */
+/* 自定义样式：侧边栏布局（通过 theme/index.js 加载） */
 
-/* 加宽侧边栏，容纳长章节名；收窄顶部导航条高度（默认 64px，
-   标题条和侧边栏顶部偏移都引用该变量，一处修改全局生效） */
 :root {
-  --vp-sidebar-width: 288px;
-  --vp-nav-height: 48px;
+  --vp-sidebar-width: 300px;
+  --vp-nav-height: 56px;
+  /* 侧边栏左右留白。标题文字缩进必须用同一个值，否则会对不齐。 */
+  --sidebar-pad-x: 24px;
 }
 
 /*
- * 收紧底部与左右边距。
- * 注意：padding-top 一律不改——桌面端(≥960px) VitePress 会把顶部
- * 内边距设为导航栏高度以避免标题重叠，抽屉端(＜960px)默认 32px
- * 同样是给标题留位的，压小会导致文字叠印。
- * 双写类名 .VPSidebar.VPSidebar 是为了在特异性上追平默认的
- * `.VPSidebar[data-v-xxx]`（0,2,0），并靠加载顺序取胜。
+ * 底部留白多给一点，滚到底时最后一项不会贴边。
+ * padding-top 一律不改——桌面端 VitePress 用导航栏高度顶开内容，
+ * 抽屉端默认 32px 也是给标题留位的，压小会叠字。
+ * 双写 .VPSidebar.VPSidebar 是为了追平默认的 `.VPSidebar[data-v-xxx]`。
  */
 .VPSidebar.VPSidebar {
-  padding-bottom: 48px;
+  padding-bottom: 64px;
 }
 
 @media (max-width: 1439px) {
   .VPSidebar.VPSidebar {
-    padding-right: 20px;
-    padding-left: 20px;
+    padding-right: var(--sidebar-pad-x);
+    padding-left: var(--sidebar-pad-x);
   }
 }
 
-/* 收紧分组间距（默认 24px） */
-.VPSidebar .VPSidebarItem.level-0 {
-  padding-bottom: 12px !important;
-}
-
-/* 收紧条目行距（默认 line-height 24px + padding 4px 0 = 行高 32px） */
-.VPSidebarItem .text {
-  line-height: 20px !important;
-  padding: 2px 0 !important;
-}
-
-/* 分组标题：小一号、次级色，避免与条目抢视觉焦点 */
-.VPSidebar .VPSidebarItem.level-0 > .item .text {
-  font-size: 13px;
-  font-weight: 600 !important;
-  letter-spacing: 0.5px;
-}
-
-/* 条目相对分组标题缩进，形成层级感 */
-.VPSidebarItem.level-1 > .item {
-  padding-left: 14px;
-}
-
 /*
- * 宽屏(≥1440px)取消 VitePress 的"居中对齐"规则——它会把侧边栏向右推
- * max(32px, (视口-最大宽度)/2)（宽屏下可达 60-80px），右侧再留出对称
- * 空隙，造成两侧大片留白。这里强制侧边栏始终贴左、占满自身宽度。
+ * 宽屏取消 VitePress 的居中推移，侧边栏始终贴左。
+ * 左右留白保持一致，避免只改左边时分隔线一边长一边短。
  */
 @media (min-width: 1440px) {
   .VPSidebar.VPSidebar {
-    padding-left: 20px !important;
+    padding-left: var(--sidebar-pad-x) !important;
+    padding-right: var(--sidebar-pad-x) !important;
     width: var(--vp-sidebar-width) !important;
   }
 }
 
 /*
- * 站点标题与侧边栏内容左对齐。VitePress 给标题的缩进分三档：
- * <960px 由 .wrapper 提供 24/32px；≥960px 标题自带 padding 0 32px；
- * ≥1440px 改为居中计算值——都和侧边栏内容的 20px 对不上，逐档拉齐。
+ * 滚动时盖住标题区的帘子。VitePress 把 top / 负边距写死成
+ * 64px 导航高和 32px 内边距，这里改成跟实际值走。
  */
-@media (max-width: 959px) {
-  .VPNavBar.has-sidebar .wrapper {
-    padding-left: 20px !important;
+@media (min-width: 960px) {
+  .VPSidebar .curtain {
+    top: calc(var(--vp-nav-height) * -1);
+    margin-left: calc(var(--sidebar-pad-x) * -1);
+    margin-right: calc(var(--sidebar-pad-x) * -1);
   }
 }
 
 /*
- * 站点标题与侧边栏内容左对齐。标题是两层嵌套的 .title：
- * 外层 div.title（VPNavBar，绝对定位、决定分隔线范围）和
- * 内层 a.title（VPNavBarTitle，承载文字与下边框）。
- * 外层：宽度=侧边栏 288、无内边距 → 分隔线精确 0→288 不外溢；
- * 内层：文字缩进 20px → 与分组标题/条目对齐。
+ * 分组默认宽度按「左右各 32px」来减，留白一改，分隔线就短一截。
+ * 拉成 100%，线和文字同一条内容边。
  */
+.VPSidebar .group {
+  width: 100% !important;
+  padding-top: 14px !important;
+}
+
+/* 分隔线上下留出差不多的空隙，避免线贴着上一组标题 */
+.VPSidebar .VPSidebarItem.level-0 {
+  padding-bottom: 12px !important;
+}
+
+.VPSidebarItem .item {
+  align-items: center;
+}
+
+/* 条目行高回到接近默认，不再把 32px 压成 24px */
+.VPSidebarItem .text {
+  line-height: 22px !important;
+  padding: 6px 0 !important;
+}
+
+/* 分组标题：小一号，和章节条目拉开层级 */
+.VPSidebar .VPSidebarItem.level-0 > .item .text {
+  font-size: 13px;
+  font-weight: 600 !important;
+  line-height: 20px !important;
+  padding: 8px 0 6px !important;
+  color: var(--vp-c-text-2);
+}
+
+.VPSidebar .VPSidebarItem.level-0.has-active > .item .text {
+  color: var(--vp-c-text-1);
+}
+
+.VPSidebarItem.level-0 > .item,
+.VPSidebarItem.level-1 > .item {
+  border-radius: 6px;
+}
+
+.VPSidebarItem.level-0 > .item:hover,
+.VPSidebarItem.level-1.is-link > .item:hover {
+  background-color: var(--vp-c-default-soft);
+}
+
+/* 当前章节：浅品牌底，比只变字色更容易扫到 */
+.VPSidebarItem.level-1.is-active > .item {
+  background-color: var(--vp-c-brand-soft);
+}
+
+.VPSidebarItem.level-1.is-active > .item .link > .text {
+  font-weight: 600;
+}
+
+/* 条目相对分组标题缩进 */
+.VPSidebarItem.level-1 > .item {
+  padding-left: 12px;
+}
+
+/*
+ * 站点标题与侧边栏内容左对齐。
+ * <960px 缩进在 .wrapper 上；≥960px 外层 div.title 决定分隔线宽度，
+ * 内层 a.title 承担文字缩进。
+ */
+@media (max-width: 959px) {
+  .VPNavBar.has-sidebar .wrapper {
+    padding-left: var(--sidebar-pad-x) !important;
+  }
+}
+
 @media (min-width: 960px) {
   .VPNavBar.has-sidebar div.title {
     left: 0 !important;
@@ -88,7 +129,7 @@
   }
 
   .VPNavBar.has-sidebar a.title {
-    padding-left: 20px !important;
-    padding-right: 20px !important;
+    padding-left: var(--sidebar-pad-x) !important;
+    padding-right: var(--sidebar-pad-x) !important;
   }
 }
